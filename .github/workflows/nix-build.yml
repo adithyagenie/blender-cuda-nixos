@@ -12,25 +12,25 @@ permissions:
 jobs:
   build:
     name: Build (${{ matrix.package }})
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
         package: [blender-with-cuda, blender-with-cuda-unstable]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-26.05
           extra_nix_config: |
             max-jobs = 2
             cores = 3
-      - uses: DeterminateSystems/magic-nix-cache-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v15
         with:
           use-gha-cache: true
           use-flakehub: false
       - name: Install Cachix
-        uses: cachix/cachix-action@v16
+        uses: cachix/cachix-action@v17
         with:
           name: adithyagenie
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
