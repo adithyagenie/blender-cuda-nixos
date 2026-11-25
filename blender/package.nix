@@ -546,11 +546,13 @@ stdenv.mkDerivation (finalAttrs: {
         '';
       });
 
+    }
+    // lib.optionalAttrs cudaSupport {
       tester-cudaAvailable = cudaPackages.writeGpuTestPython { } ''
         import subprocess
         subprocess.run([${
           lib.concatMapStringsSep ", " (x: ''"${x}"'') [
-            (lib.getExe (finalAttrs.finalPackage.override { cudaSupport = true; }))
+            (lib.getExe finalAttrs.finalPackage)
             "--background"
             "-noaudio"
             "--python-exit-code"
