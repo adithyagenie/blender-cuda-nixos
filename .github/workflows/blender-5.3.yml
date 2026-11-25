@@ -1,0 +1,79 @@
+name: Blender 5.3 DLSS
+
+on:
+  push:
+    branches:
+      - blender-5.3
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            max-jobs = 1
+            cores = 4
+      - uses: cachix/cachix-action@v17
+        with:
+          name: blender-dlss
+          extraPullNames: adithyagenie
+          skipPush: true
+      - name: Build Blender 5.3
+        run: |
+          df -h /nix/store
+          nix build .#blender_5_3 --no-update-lock-file --print-build-logs --out-link result
+      - name: Check DLSS and render a frame
+        run: |
+          result/bin/blender --version | grep -Fx 'Blender 5.3.0'
+          result/bin/blender --background --factory-startup --python-exit-code 1 --python-expr "
+          import bpy
+          import _cycles
+          assert _cycles.with_dlss, 'Cycles was built without DLSS'
+          scene = bpy.context.scene
+          scene.render.engine = 'CYCLES'
+          scene.cycles.device = 'CPU'
+          scene.cycles.samples = 1
+          scene.cycles.use_denoising = False
+          scene.render.resolution_x = 64
+          scene.render.resolution_y = 64
+          scene.render.resolution_percentage = 100
+          scene.render.image_settings.file_format = 'PNG'
+          scene.render.filepath = '$RUNNER_TEMP/blender-smoke.png'
+          bpy.ops.render.render(write_still=True)
+          "
+          test -s "$RUNNER_TEMP/blender-smoke.png"
+      - name: Publish the Blender runtime closure
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_TOKEN_NEW }}
+        run: |
+          closure="$RUNNER_TEMP/blender-runtime-closure"
+          nix-store --query --requisites ./result > "$closure"
+          if grep -E '/[^/]*-dlss-source$' "$closure"; then
+            echo "::error::The Blender runtime closure contains DLSS SDK source"
+            exit 1
+          fi
+          cachix push blender-dlss ./result
+          cachix pin blender-dlss blender_5_3 ./result --keep-revisions 1
+
+  verify-cache:
+    name: Run from cache
+    needs: build
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - uses: cachix/cachix-action@v17
+        with:
+          name: blender-dlss
+          skipPush: true
+      - name: Run Blender using substitutes only
+        run: |
+          version=$(nix run .#blender_5_3 --no-update-lock-file --max-jobs 0 \
+            --option builders "" --option fallback false \
+            --option allow-import-from-derivation false -- --version)
+          printf '%s\n' "$version" | grep -Fx 'Blender 5.3.0'
