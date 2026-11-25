@@ -160,9 +160,6 @@ stdenv.mkDerivation (finalAttrs: {
     # ceres-solver dependency propagates eigen 3 and appears to be incompatible
     # with more recent versions.
     ./eigen-3-compat.patch
-  ]
-  ++ lib.optionals stdenv.hostPlatform.isDarwin [
-    ./darwin.patch
   ];
 
   postPatch = ''
