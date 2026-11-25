@@ -33,7 +33,6 @@
   ktx-tools,
   level-zero,
   lib,
-  libdecor,
   libepoxy,
   libffi,
   libGL,
@@ -102,17 +101,10 @@
 
 let
   stdenv' = if cudaSupport then cudaPackages.backendStdenv else stdenv;
-
-  libdecor' = libdecor.overrideAttrs (old: {
-    # Blender uses private APIs, need to patch to expose them
-    patches = (old.patches or [ ]) ++ [ ./libdecor.patch ];
-  });
-
 in
 
 let
   stdenv = stdenv';
-  libdecor = libdecor';
 
   embreeSupport =
     (!stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) || stdenv.hostPlatform.isDarwin;
@@ -393,7 +385,6 @@ stdenv.mkDerivation (finalAttrs: {
   ++ lib.optionals openUsdSupport [ pyPkgsOpenusd ]
   ++ lib.optionals waylandSupport [
     dbus
-    libdecor
     libffi
     libxkbcommon
     wayland
