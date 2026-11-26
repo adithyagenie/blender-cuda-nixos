@@ -29,6 +29,7 @@ Available package outputs:
 - `blender-with-cuda` / `blender-with-cuda-stable`: stable Blender from NixOS 26.05
 - `blender-with-cuda-unstable`: Blender from `nixos-unstable`
 - `blender_5_3`: Blender 5.3.0 with CUDA and native DLSS Ray Reconstruction
+- `nvidia-dlss-runtime`: signed NVIDIA Ray Reconstruction library and its SDK license
 
 #### Blender 5.3 with DLSS
 
@@ -37,11 +38,14 @@ On x86_64 Linux, configure the dedicated binary cache before running the
 
 ```bash
 cachix use blender-dlss
-nix run github:adithyagenie/blender-cuda-nixos/blender-5.3#blender_5_3
+nix run --max-jobs 0 github:adithyagenie/blender-cuda-nixos/blender-5.3#blender_5_3
 ```
 
 DLSS Ray Reconstruction needs a supported NVIDIA RTX GPU and driver. In
 Cycles, select the GPU for rendering and choose DLSS for viewport denoising.
+On NixOS, the launcher uses the installed NVIDIA driver and the signed DLSSD
+`310.9.1` library from NVIDIA's GitHub SDK. The `nvidia-dlss-runtime` package
+includes the SDK license.
 
 #### Nix Flake integration
 
