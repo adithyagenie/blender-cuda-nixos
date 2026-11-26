@@ -26,6 +26,17 @@
           inherit system;
           config = nixpkgsConfig;
         };
+        blender53Pkgs = unstablePkgsForSystem.extend (import ./blender/dependency-overrides.nix);
+        blender53 = blender53Pkgs.callPackage ./blender/package.nix {
+          cudaSupport = true;
+          dlss = blender53Pkgs.callPackage ./deps/dlss/package.nix { };
+          jolt-physics = blender53Pkgs.callPackage ./deps/jolt-physics/package.nix { };
+        };
+        nvidia-dlss-runtime = blender53Pkgs.callPackage ./deps/dlss/runtime.nix { };
+        blender_5_3 = blender53Pkgs.callPackage ./blender/dlss-wrapper.nix {
+          blender = blender53;
+          inherit nvidia-dlss-runtime;
+        };
         blender-with-cuda-stable = pkgs.blender.override {
           cudaSupport = true;
         };
@@ -40,6 +51,7 @@
         };
         packages = {
           inherit blender-with-cuda blender-with-cuda-stable blender-with-cuda-unstable;
+          inherit blender_5_3 nvidia-dlss-runtime;
           default = blender-with-cuda;
         };
       };
