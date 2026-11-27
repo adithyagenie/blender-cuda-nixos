@@ -45,9 +45,7 @@ jobs:
           name: ${{ matrix.cache }}
           authToken: ${{ secrets[matrix.cache_auth_secret] }}
           extraPullNames: ${{ matrix.extra_pull_names }}
-          useDaemon: false
-          pathsToPush: result
-          cachixArgs: -j1
+          skipPush: true
       - name: Build
         run: |
           set -euo pipefail
@@ -55,3 +53,10 @@ jobs:
             --no-update-lock-file \
             --print-out-paths \
             --out-link result
+      - name: Publish and pin the runtime closure
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets[matrix.cache_auth_secret] }}
+        run: |
+          set -euo pipefail
+          cachix push -j1 "${{ matrix.cache }}" ./result
+          cachix pin "${{ matrix.cache }}" "${{ matrix.package }}" ./result --keep-revisions 1
